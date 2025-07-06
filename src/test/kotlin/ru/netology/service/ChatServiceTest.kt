@@ -4,7 +4,7 @@ import org.junit.*
 import org.junit.Assert.*
 import ru.netology.model.Message
 
-internal class ChatServiceTest {
+class ChatServiceTest {
 
     private lateinit var service: ChatService
 
