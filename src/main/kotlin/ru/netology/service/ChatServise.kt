@@ -9,19 +9,31 @@ class ChatService {
     fun getChats(): List<Chat> = chats.values.toList()
 
     fun getUnreadChatsCount(): Int =
-        chats.values.count { chat ->
-            chat.messages.any { !it.isRead && !it.isDeleted }
-        }
+        chats.values.asSequence()
+            .filter { chat ->
+                chat.messages.asSequence()
+                    .filterNot { it.isDeleted }
+                    .any { !it.isRead }
+            }
+            .count()
 
     fun getLastMessages(): List<String> =
-        chats.values.map { chat ->
-            chat.messages.filterNot { it.isDeleted }.lastOrNull()?.text ?: "нет сообщений"
-        }
+        chats.values.asSequence()
+            .map { chat ->
+                chat.messages.asSequence()
+                    .filterNot { it.isDeleted }
+                    .lastOrNull()
+                    ?.text ?: "нет сообщений"
+            }
+            .toList()
 
     fun getMessages(companionId: Int, limit: Int): List<Message> {
         val chat = chats[companionId] ?: return emptyList()
-        val notDeleted = chat.messages.filterNot { it.isDeleted }
-        val result = notDeleted.takeLast(limit)
+        val result = chat.messages.asSequence()
+            .filterNot { it.isDeleted }
+            .toList()
+            .takeLast(limit)
+
         result.forEach { it.isRead = true }
         return result
     }
@@ -35,10 +47,12 @@ class ChatService {
 
     fun deleteMessage(companionId: Int, messageId: Int): Boolean {
         val chat = chats[companionId] ?: return false
-        return chat.messages.find { it.id == messageId }?.let {
-            it.isDeleted = true
-            true
-        } ?: false
+        return chat.messages.asSequence()
+            .firstOrNull { it.id == messageId }
+            ?.let {
+                it.isDeleted = true
+                true
+            } ?: false
     }
 
     fun deleteChat(companionId: Int): Boolean =
